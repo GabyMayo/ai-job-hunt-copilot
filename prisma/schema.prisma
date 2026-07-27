@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  BOOKMARKED
+  PREPARING
+  APPLIED
+  ONLINE_ASSESSMENT
+  RECRUITER_SCREEN
+  INTERVIEWING
+  FINAL_INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum DeadlineType {
+  APPLICATION
+  ONLINE_ASSESSMENT
+  INTERVIEW
+  FOLLOW_UP
+  OTHER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+  contacts     Contact[]
+  deadlines    Deadline[]
+  resumes      Resume[]
+}
+
+model Application {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  company        String
+  position       String
+  jobUrl         String?
+  location       String?
+  workMode       WorkMode          @default(HYBRID)
+  salary         String?
+  status         ApplicationStatus @default(BOOKMARKED)
+  dateApplied    DateTime?
+  recruiterName  String?
+  recruiterEmail String?
+  jobDescription String?
+  notes          String?
+
+  resumeId String?
+  resume   Resume? @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts  Contact[]
+  deadlines Deadline[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Contact {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  name    String
+  email   String?
+  company String?
+  role    String?
+  notes   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([applicationId])
+}
+
+model Deadline {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  type      DeadlineType
+  title     String
+  dueAt     DateTime
+  completed Boolean      @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([applicationId])
+  @@index([dueAt])
+}
+
+model Resume {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  content   String?
+  fileUrl   String?
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+}
